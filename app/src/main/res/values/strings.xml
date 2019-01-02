@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BookStore</string>
+    <string name="action_search">搜索</string>
+    <string name="action_scanner">扫描</string>
+</resources>
