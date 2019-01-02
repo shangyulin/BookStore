@@ -300,7 +300,7 @@ public class ISBNBookSubject implements Serializable {
         this.translator = translator;
     }
 
-    public static class RatingBean {
+    public static class RatingBean implements Serializable{
         /**
          * max : 10
          * numRaters : 4094
@@ -346,7 +346,7 @@ public class ISBNBookSubject implements Serializable {
         }
     }
 
-    public static class ImagesBean {
+    public static class ImagesBean implements Serializable{
         /**
          * small : https://img3.doubanio.com/view/subject/s/public/s1106934.jpg
          * large : https://img3.doubanio.com/view/subject/l/public/s1106934.jpg
@@ -382,7 +382,7 @@ public class ISBNBookSubject implements Serializable {
         }
     }
 
-    public static class SeriesBean {
+    public static class SeriesBean implements Serializable{
         /**
          * id : 1163
          * title : 计算机科学丛书
@@ -408,7 +408,7 @@ public class ISBNBookSubject implements Serializable {
         }
     }
 
-    public static class TagsBean {
+    public static class TagsBean implements Serializable{
         /**
          * count : 2810
          * name : C

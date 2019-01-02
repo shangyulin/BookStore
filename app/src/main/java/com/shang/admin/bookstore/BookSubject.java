@@ -1,8 +1,9 @@
 package com.shang.admin.bookstore;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class BookSubject {
+public class BookSubject implements Serializable {
 
 
     /**
@@ -59,7 +60,7 @@ public class BookSubject {
                 '}';
     }
 
-    public static class BooksBean {
+    public static class BooksBean implements Serializable{
         /**
          * rating : {"max":10,"numRaters":0,"average":"0.0","min":0}
          * subtitle :
@@ -336,7 +337,7 @@ public class BookSubject {
                     '}';
         }
 
-        public static class RatingBean {
+        public static class RatingBean implements Serializable{
             /**
              * max : 10
              * numRaters : 0
@@ -392,7 +393,7 @@ public class BookSubject {
             }
         }
 
-        public static class ImagesBean {
+        public static class ImagesBean implements Serializable{
             /**
              * small : https://img1.doubanio.com/f/shire/5522dd1f5b742d1e1394a17f44d590646b63871d/pics/book-default-lpic.gif
              * large : https://img1.doubanio.com/f/shire/5522dd1f5b742d1e1394a17f44d590646b63871d/pics/book-default-lpic.gif
@@ -428,7 +429,7 @@ public class BookSubject {
             }
         }
 
-        public static class SeriesBean {
+        public static class SeriesBean implements Serializable{
             /**
              * id : 27014
              * title : 奇点系列
