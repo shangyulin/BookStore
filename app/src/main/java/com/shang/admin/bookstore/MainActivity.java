@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,14 +15,13 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import com.shang.admin.bookstore.Bean.BookSubject;
 import com.shang.admin.bookstore.Bean.ISBNBookSubject;
-import com.shang.admin.bookstore.CacheUtils.LocalCacheUtils;
+import com.shang.admin.bookstore.Bean.SimpleBookBean;
 import com.shang.admin.bookstore.Service.BookService;
 import com.shang.admin.bookstore.db.BookDB;
 import com.yanzhenjie.permission.AndPermission;
@@ -45,7 +43,7 @@ import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
+public class MainActivity extends AppCompatActivity {
 
     public static final String BASE_URL = "https://api.douban.com/v2/book/";
     public static final String ISBN_URL = "https://api.douban.com/v2/book/isbn/:";
@@ -166,9 +164,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_menu, menu);
-        SearchView searchView = (SearchView) menu.findItem(
-                R.id.action_search).getActionView();
-        searchView.setOnQueryTextListener(this);
         return true;
     }
 
@@ -178,8 +173,8 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
      */
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_search) {
-            // TODO
-
+            // 跳转到搜索界面
+            startActivity(new Intent(this, SearchActivity.class));
         } else if (item.getItemId() == R.id.action_scanner) {
             startScanner();
         }
@@ -190,22 +185,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     private void startScanner() {
         Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
         startActivityForResult(intent, REQUEST_CODE_SCAN);
-    }
-
-    @Override
-    public boolean onQueryTextSubmit(String query) {
-        Toast.makeText(getApplicationContext(), query, Toast.LENGTH_SHORT).show();
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextChange(String newText) {
-        return true;
-    }
-
-    @Override
-    public void onPointerCaptureChanged(boolean hasCapture) {
-
     }
 
 
@@ -238,6 +217,8 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 Log.d("giant", result);
                 Gson gson = new Gson();
                 final ISBNBookSubject isbnBookSubject = gson.fromJson(result, ISBNBookSubject.class);
+                // 将扫描的书也保存到数据库
+                addIntoDB(isbnBookSubject);
                 if (isbnBookSubject != null) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -250,5 +231,11 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 }
             }
         });
+    }
+
+
+    public void addIntoDB(ISBNBookSubject bookBean){
+        BookDB db = new BookDB(MainActivity.this);
+        db.insert(bookBean);
     }
 }
