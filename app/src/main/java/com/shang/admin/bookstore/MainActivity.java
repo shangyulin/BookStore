@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,6 +21,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import com.shang.admin.bookstore.CacheUtils.LocalCacheUtils;
 import com.yanzhenjie.permission.AndPermission;
 import com.yzq.zxinglibrary.android.CaptureActivity;
 import com.yzq.zxinglibrary.common.Constant;
@@ -51,10 +53,17 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         }
 
         @Override
-        public void onNext(BookSubject t) {
+        public void onNext(final BookSubject t) {
             books = t.getBooks();
             pb.setVisibility(View.GONE);
             lv.setAdapter(new BookAdapter());
+            // 开启线程池，写入缓存
+            ThreadPoolManager.getInstance().executed(new Runnable() {
+                @Override
+                public void run() {
+                    LocalCacheUtils.saveObject(t);
+                }
+            });
         }
 
         @Override
@@ -81,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         lv = findViewById(getResources().getIdentifier("lv", "id", getPackageName()));
         pb = findViewById(getResources().getIdentifier("pb", "id", getPackageName()));
         pb.setVisibility(View.VISIBLE);
+
         // 网络获取
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -147,12 +157,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_menu, menu);
-        // 如果运行的环境 (部署到什么版本的手机 )大于3.0
-        if (android.os.Build.VERSION.SDK_INT > 11) {
-            SearchView searchView = (SearchView) menu.findItem(
-                    R.id.action_search).getActionView();
-            searchView.setOnQueryTextListener(this);// 搜索的监听
-        }
+        SearchView searchView = (SearchView) menu.findItem(
+                R.id.action_search).getActionView();
+        searchView.setOnQueryTextListener(this);
         return true;
     }
 
@@ -162,26 +169,26 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
      */
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_search) {
-            Toast.makeText(getApplicationContext(), "搜索", Toast.LENGTH_SHORT).show();
+            // TODO
+
         } else if (item.getItemId() == R.id.action_scanner) {
             startScanner();
         }
         return super.onOptionsItemSelected(item);
     }
 
+    // 条形码扫描
     private void startScanner() {
         Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
         startActivityForResult(intent, REQUEST_CODE_SCAN);
     }
 
-    // 当搜索提交的时候
     @Override
     public boolean onQueryTextSubmit(String query) {
         Toast.makeText(getApplicationContext(), query, Toast.LENGTH_SHORT).show();
         return true;
     }
 
-    // 当搜索的文本发生变化
     @Override
     public boolean onQueryTextChange(String newText) {
         return true;
@@ -200,31 +207,39 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         if (requestCode == REQUEST_CODE_SCAN && resultCode == RESULT_OK) {
             if (data != null) {
                 String isbn = data.getStringExtra(Constant.CODED_CONTENT);
+                Log.d("giant", isbn);
                 String final_url = ISBN_URL + isbn;
-                OkHttpClient client = new OkHttpClient();
-                Request request = new Request.Builder().get().url(final_url).build();
-                client.newCall(request).enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        String result = response.body().string();
-                        Gson gson = new Gson();
-                        final ISBNBookSubject isbnBookSubject = gson.fromJson(result, ISBNBookSubject.class);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Intent intent = new Intent(MainActivity.this, ISBNDetailActivity.class);
-                                intent.putExtra("book", isbnBookSubject);
-                                startActivity(intent);
-                            }
-                        });
-                    }
-                });
+                getISBNBookInfo(final_url);
             }
         }
+    }
+
+    private void getISBNBookInfo(String final_url) {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().get().url(final_url).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String result = response.body().string();
+                Log.d("giant", result);
+                Gson gson = new Gson();
+                final ISBNBookSubject isbnBookSubject = gson.fromJson(result, ISBNBookSubject.class);
+                if (isbnBookSubject != null){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Intent intent = new Intent(MainActivity.this, ISBNDetailActivity.class);
+                            intent.putExtra("book", isbnBookSubject);
+                            startActivity(intent);
+                        }
+                    });
+                }
+            }
+        });
     }
 }

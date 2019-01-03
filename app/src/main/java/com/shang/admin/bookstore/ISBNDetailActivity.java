@@ -24,9 +24,10 @@ public class ISBNDetailActivity extends AppCompatActivity {
         icon = findViewById(getResources().getIdentifier("icon", "id", getPackageName()));
         title = findViewById(getResources().getIdentifier("title", "id", getPackageName()));
         author = findViewById(getResources().getIdentifier("author", "id", getPackageName()));
-
-        Glide.with(this).load(book.getImages().getSmall()).into(icon);
-        title.setText(book.getTitle());
-        author.setText(book.getAuthor().get(0));
+        if (book != null){
+            Glide.with(this).load(book.getImages().getSmall()).into(icon);
+            title.setText(book.getTitle());
+            author.setText(book.getAuthor().get(0));
+        }
     }
 }
