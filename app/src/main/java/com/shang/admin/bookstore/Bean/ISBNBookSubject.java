@@ -1,4 +1,4 @@
-package com.shang.admin.bookstore;
+package com.shang.admin.bookstore.Bean;
 
 import java.io.Serializable;
 import java.util.List;

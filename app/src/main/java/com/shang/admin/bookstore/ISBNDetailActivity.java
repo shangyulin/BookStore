@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.shang.admin.bookstore.Bean.ISBNBookSubject;
 
 public class ISBNDetailActivity extends AppCompatActivity {
 

@@ -21,7 +21,11 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import com.shang.admin.bookstore.Bean.BookSubject;
+import com.shang.admin.bookstore.Bean.ISBNBookSubject;
 import com.shang.admin.bookstore.CacheUtils.LocalCacheUtils;
+import com.shang.admin.bookstore.Service.BookService;
+import com.shang.admin.bookstore.db.BookDB;
 import com.yanzhenjie.permission.AndPermission;
 import com.yzq.zxinglibrary.android.CaptureActivity;
 import com.yzq.zxinglibrary.common.Constant;
@@ -61,7 +65,11 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             ThreadPoolManager.getInstance().executed(new Runnable() {
                 @Override
                 public void run() {
-                    LocalCacheUtils.saveObject(t);
+                    // 缓存到本地
+                    // LocalCacheUtils.saveObject(t);
+                    // 保存到数据库
+                    BookDB db = new BookDB(MainActivity.this);
+                    db.insert(t);
                 }
             });
         }
@@ -103,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(observer);
+
     }
 
 
@@ -145,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 view = convertView;
                 holder = (ViewHolder) view.getTag();
             }
-            Glide.with(MainActivity.this).load(books.get(position).getImages().getSmall()).into(holder.icon);
+            Glide.with(MainActivity.this).load(books.get(position).getImages().getSmall()).override(100, 100).into(holder.icon);
             holder.title.setText(books.get(position).getTitle());
             holder.author.setText(books.get(position).getAuthor().get(0));
             return view;
@@ -229,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 Log.d("giant", result);
                 Gson gson = new Gson();
                 final ISBNBookSubject isbnBookSubject = gson.fromJson(result, ISBNBookSubject.class);
-                if (isbnBookSubject != null){
+                if (isbnBookSubject != null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

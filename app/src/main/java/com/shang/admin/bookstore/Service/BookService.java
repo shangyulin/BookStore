@@ -1,4 +1,6 @@
-package com.shang.admin.bookstore;
+package com.shang.admin.bookstore.Service;
+
+import com.shang.admin.bookstore.Bean.BookSubject;
 
 import io.reactivex.Observable;
 import retrofit2.http.GET;
