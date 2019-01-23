@@ -1,19 +1,21 @@
 package com.shang.admin.bookstore;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -21,7 +23,6 @@ import com.google.gson.Gson;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import com.shang.admin.bookstore.Bean.BookSubject;
 import com.shang.admin.bookstore.Bean.ISBNBookSubject;
-import com.shang.admin.bookstore.Bean.SimpleBookBean;
 import com.shang.admin.bookstore.Service.BookService;
 import com.shang.admin.bookstore.db.BookDB;
 import com.yanzhenjie.permission.AndPermission;
@@ -43,10 +44,14 @@ import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AppBarLayout.OnOffsetChangedListener, View.OnClickListener {
 
     public static final String BASE_URL = "https://api.douban.com/v2/book/";
     public static final String ISBN_URL = "https://api.douban.com/v2/book/isbn/:";
+
+    private ViewPager vp;
+    private AppBarLayout abl_bar;
+    private View tl_expand, tl_collapse;
     private static final int REQUEST_CODE_SCAN = 12;
 
     private Observer<BookSubject> observer = new Observer<BookSubject>() {
@@ -57,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onNext(final BookSubject t) {
             books = t.getBooks();
-            pb.setVisibility(View.GONE);
-            lv.setAdapter(new BookAdapter());
+            lv.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+            lv.setAdapter(new MyInnerAdapter());
             // 开启线程池，写入缓存
             ThreadPoolManager.getInstance().executed(new Runnable() {
                 @Override
@@ -82,9 +87,12 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
-    private ListView lv;
+    private RecyclerView lv;
     private List<BookSubject.BooksBean> books;
-    private ProgressBar pb;
+    private ImageView search;
+    private ImageView search2;
+    private ImageView scanner;
+    private ImageView scanner2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,8 +102,23 @@ public class MainActivity extends AppCompatActivity {
         AndPermission.with(this).permission(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}).start();
 
         lv = findViewById(getResources().getIdentifier("lv", "id", getPackageName()));
-        pb = findViewById(getResources().getIdentifier("pb", "id", getPackageName()));
-        pb.setVisibility(View.VISIBLE);
+
+        tl_expand = findViewById(R.id.tl_expand);
+        tl_collapse = findViewById(R.id.tl_collapse);
+        search = findViewById(R.id.iv_search);
+        search2 = findViewById(R.id.iv_search2);
+        scanner = findViewById(R.id.iv_scanner);
+        scanner2 = findViewById(R.id.iv_scanner2);
+        vp = findViewById(R.id.vp);
+        vp.setAdapter(new MyViewPagerAdapter());
+
+        abl_bar = findViewById(R.id.abl_bar);
+        abl_bar.addOnOffsetChangedListener(this);
+        search.setOnClickListener(this);
+        search2.setOnClickListener(this);
+        scanner.setOnClickListener(this);
+        scanner2.setOnClickListener(this);
+
 
         // 网络获取
         Retrofit retrofit = new Retrofit.Builder()
@@ -112,73 +135,68 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
+        int offset = Math.abs(verticalOffset);
+        int total = appBarLayout.getTotalScrollRange();
+        if (offset <= total * 0.45) {
+            tl_expand.setVisibility(View.VISIBLE);
+            tl_collapse.setVisibility(View.GONE);
+        } else {
+            tl_expand.setVisibility(View.GONE);
+            tl_collapse.setVisibility(View.VISIBLE);
+        }
+    }
 
-    static class ViewHolder {
-        ImageView icon;
-        TextView title;
-        TextView author;
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.iv_search:
+            case R.id.iv_search2:
+                startActivity(new Intent(MainActivity.this, SearchActivity.class));
+                break;
+            case R.id.iv_scanner:
+            case R.id.iv_scanner2:
+                startScanner();
+                break;
+        }
     }
 
 
-    class BookAdapter extends BaseAdapter {
+    class MyInnerAdapter extends RecyclerView.Adapter<MyInnerAdapter.MyHolder> {
+
+        @NonNull
+        @Override
+        public MyInnerAdapter.MyHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+            View view = View.inflate(MainActivity.this, R.layout.book_item, null);
+            return new MyHolder(view);
+        }
 
         @Override
-        public int getCount() {
+        public void onBindViewHolder(@NonNull MyInnerAdapter.MyHolder myHolder, int position) {
+            Glide.with(MainActivity.this).load(books.get(position).getImages().getSmall()).override(100, 100).into(myHolder.icon);
+            myHolder.title.setText(books.get(position).getTitle());
+            myHolder.author.setText(books.get(position).getAuthor().get(0));
+        }
+
+        @Override
+        public int getItemCount() {
             return books.size();
         }
 
-        @Override
-        public Object getItem(int position) {
-            return books.get(position);
-        }
+        class MyHolder extends RecyclerView.ViewHolder {
 
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
+            private ImageView icon;
+            private TextView title;
+            private TextView author;
 
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View view;
-            ViewHolder holder;
-            if (convertView == null) {
-                view = View.inflate(MainActivity.this, R.layout.book_item, null);
-                holder = new ViewHolder();
-                holder.icon = view.findViewById(R.id.icon);
-                holder.title = view.findViewById(R.id.title);
-                holder.author = view.findViewById(R.id.author);
-                view.setTag(holder);
-            } else {
-                view = convertView;
-                holder = (ViewHolder) view.getTag();
+            public MyHolder(@NonNull View itemView) {
+                super(itemView);
+                icon = itemView.findViewById(R.id.icon);
+                title = itemView.findViewById(R.id.title);
+                author = itemView.findViewById(R.id.author);
             }
-            Glide.with(MainActivity.this).load(books.get(position).getImages().getSmall()).override(100, 100).into(holder.icon);
-            holder.title.setText(books.get(position).getTitle());
-            holder.author.setText(books.get(position).getAuthor().get(0));
-            return view;
         }
-    }
-
-
-    @SuppressLint("NewApi")
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_menu, menu);
-        return true;
-    }
-
-
-    /**
-     * 处理actionBar菜单条目的点击事件
-     */
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_search) {
-            // 跳转到搜索界面
-            startActivity(new Intent(this, SearchActivity.class));
-        } else if (item.getItemId() == R.id.action_scanner) {
-            startScanner();
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     // 条形码扫描
@@ -234,8 +252,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void addIntoDB(ISBNBookSubject bookBean){
+    public void addIntoDB(ISBNBookSubject bookBean) {
         BookDB db = new BookDB(MainActivity.this);
         db.insert(bookBean);
+    }
+
+    class MyViewPagerAdapter extends PagerAdapter {
+
+        @Override
+        public int getCount() {
+            return 4;
+        }
+
+        @Override
+        public boolean isViewFromObject(@NonNull View view, @NonNull Object o) {
+            return view == o;
+        }
+
+        @NonNull
+        @Override
+        public Object instantiateItem(@NonNull ViewGroup container, int position) {
+            TextView textView = new TextView(MainActivity.this);
+            textView.setText("这是第" + position + "页");
+            textView.setTextColor(Color.RED);
+            textView.setGravity(Gravity.CENTER);
+            container.addView(textView);
+            return textView;
+        }
+
+        @Override
+        public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+            container.removeView((View) object);
+        }
     }
 }
